@@ -8,7 +8,7 @@ intro1
     .enter(ctx => ctx.reply('привет, введи имя'))
     .on('message', ctx => {
         if (ctx.message && ctx.message.text) {
-            const text = ctx.message.text;
+            const { text } = ctx.message;
             if (inRange(text.length, 5, 25)) {
                 return ctx.reply('оке');
             }
