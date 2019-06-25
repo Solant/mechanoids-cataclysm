@@ -4,15 +4,15 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "ts-node src/index.ts",
+    "start": "ts-node --project tsconfig.json src/index.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@types/lodash": "^4.14.134",
     "@types/mongoose": "^5.5.5",
-    "dts-gen": "^0.5.8",
     "lodash": "^4.17.11",
     "mongoose": "^5.5.14",
     "telegraf": "^3.30.1",

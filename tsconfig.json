@@ -4,6 +4,11 @@
     "module": "commonjs",
     "strict": true,
     "typeRoots": ["./types", "./node_modules/@types"],
-    "esModuleInterop": true
+    "esModuleInterop": true,
+    "baseUrl": ".",
+    "paths": {
+      "telegraf/scenes/base": ["./types/telegraf/scene.d.ts"],
+      "telegraf/stage": ["./types/telegraf/stage.d.ts"]
+    }
   }
 }

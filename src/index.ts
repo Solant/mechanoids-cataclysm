@@ -1,6 +1,6 @@
 import Telegraf from 'telegraf';
+import introduction from './stages/introduction/index';
 const session = require('telegraf/session');
-const introduction = require('./stages/introduction/index');
 
 const bot = new Telegraf('');
 bot.use(session());
