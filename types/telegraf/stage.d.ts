@@ -7,5 +7,4 @@ declare module 'telegraf/stage' {
         register(...scenes: [BaseScene<TContext>]): this;
         middleware(): Middleware<TContext>;
     }
-
 }
