@@ -1,0 +1,9 @@
+{
+  "compilerOptions": {
+    "target": "es6",
+    "module": "commonjs",
+    "strict": true,
+    "typeRoots": ["./types", "./node_modules/@types"],
+    "esModuleInterop": true
+  }
+}
