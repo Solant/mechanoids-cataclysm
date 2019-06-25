@@ -90,3 +90,6 @@ typings/
 # IDE files
 *.iml
 .idea/
+
+# .env files
+.env
