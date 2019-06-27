@@ -5,7 +5,7 @@ import { inRange } from 'lodash';
 const intro1 = new BaseScene('intro1');
 
 intro1
-    .enter(ctx => ctx.reply('привет, введи имя'))
+    .enter(ctx => ctx.reply(ctx.i18n.t('greeting')))
     .on('message', ctx => {
         if (ctx.message && ctx.message.text) {
             const { text } = ctx.message;
