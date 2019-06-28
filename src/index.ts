@@ -7,12 +7,14 @@ import { createConnection } from 'typeorm';
 import introduction from './stages/introduction/index';
 import { User } from './models/User';
 
+import { logger } from './logger';
+
 const session = require('telegraf/session');
 
 config({ path: resolve(__dirname, '../.env') });
 
 (async () => {
-    console.log('Connecting to database');
+    logger.info('Connecting to database');
     await createConnection({
         type: 'postgres',
         host: process.env.DB_HOST || '',
@@ -26,9 +28,9 @@ config({ path: resolve(__dirname, '../.env') });
         synchronize: true,
         logging: false,
     });
-    console.log('Database connected');
+    logger.info('Database connected');
 
-    console.log('Starting bot');
+    logger.info('Starting bot');
     const i18n = new TelegrafI18n({
         defaultLanguage: 'ru',
         allowMissing: false,
@@ -42,5 +44,5 @@ config({ path: resolve(__dirname, '../.env') });
     // @ts-ignore
     bot.on('message', ctx => ctx.scene.enter('intro1'));
     bot.startPolling();
-    console.log('Bot started');
+    logger.info('Bot started');
 })();

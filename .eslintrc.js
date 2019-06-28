@@ -1,6 +1,7 @@
 module.exports = {
     extends: ["airbnb-typescript/base"],
     rules: {
-        "@typescript-eslint/indent": ["error", 4]
+        'import/prefer-default-export': ['off'],
+        "@typescript-eslint/indent": ["error", 4],
     }
 };
