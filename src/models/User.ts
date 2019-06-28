@@ -1,11 +1,10 @@
-import { Document, Schema, model } from 'mongoose';
+import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
 
-export interface IUser extends Document {
-    name: string;
+@Entity()
+export class User {
+    @PrimaryGeneratedColumn()
+    id!: number;
+
+    @Column()
+    name!: string;
 }
-
-export const UserSchema = new Schema({
-    name: { type: String, required: true },
-});
-
-export default model<IUser>('User', UserSchema);
