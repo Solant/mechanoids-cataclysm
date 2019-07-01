@@ -8,6 +8,11 @@
     "typeRoots": ["./types", "./node_modules/@types"],
     "esModuleInterop": true,
     "baseUrl": ".",
+    "plugins": [
+      {
+        "transform": "ts-optchain/transform"
+      }
+    ],
     "paths": {
       "telegraf/scenes/base": ["./types/telegraf/scene.d.ts"],
       "telegraf/stage": ["./types/telegraf/stage.d.ts"]
