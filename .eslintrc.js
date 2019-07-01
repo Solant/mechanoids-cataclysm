@@ -3,5 +3,6 @@ module.exports = {
     rules: {
         'import/prefer-default-export': ['off'],
         "@typescript-eslint/indent": ["error", 4],
+        'max-len': ['error', { code: 120 }],
     }
 };

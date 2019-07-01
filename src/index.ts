@@ -41,7 +41,6 @@ config({ path: resolve(__dirname, '../.env') });
     bot.use(session());
     bot.use(i18n.middleware());
     bot.use(introduction.middleware());
-    // @ts-ignore
     bot.on('message', ctx => ctx.scene.enter('intro1'));
     bot.startPolling();
     logger.info('Bot started');
