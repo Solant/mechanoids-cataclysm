@@ -4,7 +4,8 @@ import { config } from 'dotenv';
 import { resolve } from 'path';
 import TelegrafI18n from 'telegraf-i18n';
 import { createConnection } from 'typeorm';
-import introduction from './stages/introduction/index';
+
+import introduction, { IntroductionScenes } from './stages/introduction/index';
 
 import { logger } from './logger';
 
@@ -28,7 +29,7 @@ config({ path: resolve(__dirname, '../.env') });
     bot.use(session());
     bot.use(i18n.middleware());
     bot.use(introduction.middleware());
-    bot.on('message', ctx => ctx.scene.enter('intro1'));
+    bot.on('message', ctx => ctx.scene.enter(IntroductionScenes.Intro1));
     bot.startPolling();
     logger.info('Bot started');
 })();

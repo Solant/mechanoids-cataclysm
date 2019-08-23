@@ -6,7 +6,8 @@
   "scripts": {
     "start": "ts-node --project tsconfig.json src/index.ts",
     "test": "echo \"Error: no test specified\" && exit 1",
-    "lint": "eslint --ext .js,.jsx,.ts,.tsx ./src"
+    "lint": "eslint --ext .js,.jsx,.ts,.tsx ./src",
+    "typeorm": "ts-node ./node_modules/typeorm/cli.js"
   },
   "keywords": [],
   "author": "",

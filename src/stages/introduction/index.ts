@@ -4,12 +4,13 @@ import { inRange } from 'lodash';
 import { oc } from 'ts-optchain';
 import { getRepository } from 'typeorm';
 import { User } from '../../models/User';
+import { Location } from '../../models/Location';
 
-enum Scenes {
+export enum IntroductionScenes {
     Intro1 = 'intro1',
 }
 
-const intro1 = new BaseScene(Scenes.Intro1);
+const intro1 = new BaseScene(IntroductionScenes.Intro1);
 
 intro1
     .enter(ctx => ctx.reply(ctx.i18n.t('greeting')))
@@ -31,10 +32,21 @@ intro1
 
         const newUser = new User();
         newUser.name = name;
+        newUser.userId = ctx.from!.id;
+        newUser.chatId = ctx.chat!.id;
+        newUser.location = (await getRepository(Location).findOne(1))!;
         await getRepository(User).save(newUser);
-        await ctx.scene.leave();
-        return ctx.reply(ctx.i18n.t('story', { userName: newUser.name }));
+        await ctx.reply(ctx.i18n.t('story', { userName: newUser.name }));
+        return ctx.scene.enter('location');
     });
 
+const scene2 = new BaseScene('location');
+scene2.enter(async ctx => {
+    const user = await getRepository(User)
+        .findOne({ chatId: ctx.chat!.id }, { relations: ['location'] });
+    const locationName = user!.location.name;
 
-export default new Stage([intro1]);
+    return ctx.reply(ctx.i18n.t('buildingGreeting', { locationName }));
+});
+
+export default new Stage([intro1, scene2]);

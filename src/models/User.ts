@@ -1,5 +1,5 @@
 import {
-    Column, Entity, JoinColumn, OneToOne, PrimaryGeneratedColumn,
+    Column, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn,
 } from 'typeorm';
 import { Location } from './Location';
 
@@ -9,9 +9,15 @@ export class User {
     id!: number;
 
     @Column()
+    userId!: number;
+
+    @Column()
+    chatId!: number;
+
+    @Column()
     name!: string;
 
-    @OneToOne(() => Location)
+    @ManyToOne(() => Location)
     @JoinColumn()
     location!: Location;
 }
