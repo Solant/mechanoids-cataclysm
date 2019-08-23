@@ -5,7 +5,6 @@ import { resolve } from 'path';
 import TelegrafI18n from 'telegraf-i18n';
 import { createConnection } from 'typeorm';
 import introduction from './stages/introduction/index';
-import { User } from './models/User';
 
 import { logger } from './logger';
 
@@ -15,19 +14,7 @@ config({ path: resolve(__dirname, '../.env') });
 
 (async () => {
     logger.info('Connecting to database');
-    await createConnection({
-        type: 'postgres',
-        host: process.env.DB_HOST || '',
-        port: Number.parseInt(process.env.DB_PORT || '0', 10),
-        username: process.env.DB_USERNAME || '',
-        password: process.env.DB_PASSWORD || '',
-        database: process.env.DB_NAME || '',
-        entities: [
-            User,
-        ],
-        synchronize: true,
-        logging: false,
-    });
+    await createConnection();
     logger.info('Database connected');
 
     logger.info('Starting bot');

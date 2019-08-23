@@ -1,4 +1,7 @@
-import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
+import {
+    Column, Entity, JoinColumn, OneToOne, PrimaryGeneratedColumn,
+} from 'typeorm';
+import { Location } from './Location';
 
 @Entity()
 export class User {
@@ -7,4 +10,8 @@ export class User {
 
     @Column()
     name!: string;
+
+    @OneToOne(() => Location)
+    @JoinColumn()
+    location!: Location;
 }
