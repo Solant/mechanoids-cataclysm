@@ -5,7 +5,11 @@ import { oc } from 'ts-optchain';
 import { getRepository } from 'typeorm';
 import { User } from '../../models/User';
 
-const intro1 = new BaseScene('intro1');
+enum Scenes {
+    Intro1 = 'intro1',
+}
+
+const intro1 = new BaseScene(Scenes.Intro1);
 
 intro1
     .enter(ctx => ctx.reply(ctx.i18n.t('greeting')))
@@ -13,23 +17,24 @@ intro1
         const name = oc(ctx).message.text('');
 
         if (name.length === 0) {
-            return ctx.reply('Введи имя');
+            return ctx.reply(ctx.i18n.t('getName'));
         }
 
         if (!inRange(name.length, 5, 25)) {
-            return ctx.reply('Неправильная длина имени');
+            return ctx.reply(ctx.i18n.t('getNameLength'));
         }
 
         const otherUser = await getRepository(User).findOne({ where: { name } });
         if (otherUser !== undefined) {
-            return ctx.reply('Такой механоид уже зарегистрирован');
+            return ctx.reply(ctx.i18n.t('getNameExists'));
         }
 
         const newUser = new User();
         newUser.name = name;
         await getRepository(User).save(newUser);
         await ctx.scene.leave();
-        return ctx.reply('Механоид зарегистрирован');
+        return ctx.reply(ctx.i18n.t('story', { userName: newUser.name }));
     });
+
 
 export default new Stage([intro1]);
