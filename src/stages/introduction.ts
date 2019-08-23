@@ -1,10 +1,11 @@
 import BaseScene from 'telegraf/scenes/base';
-import Stage from 'telegraf/stage';
 import { inRange } from 'lodash';
 import { oc } from 'ts-optchain';
 import { getRepository } from 'typeorm';
-import { User } from '../../models/User';
-import { Location } from '../../models/Location';
+
+import { User } from '../models/User';
+import { Location } from '../models/Location';
+import { LocationScenes } from './location';
 
 export enum IntroductionScenes {
     Intro1 = 'intro1',
@@ -37,16 +38,7 @@ intro1
         newUser.location = (await getRepository(Location).findOne(1))!;
         await getRepository(User).save(newUser);
         await ctx.reply(ctx.i18n.t('story', { userName: newUser.name }));
-        return ctx.scene.enter('location');
+        return ctx.scene.enter(LocationScenes.Intro);
     });
 
-const scene2 = new BaseScene('location');
-scene2.enter(async ctx => {
-    const user = await getRepository(User)
-        .findOne({ chatId: ctx.chat!.id }, { relations: ['location'] });
-    const locationName = user!.location.name;
-
-    return ctx.reply(ctx.i18n.t('buildingGreeting', { locationName }));
-});
-
-export default new Stage([intro1, scene2]);
+export default [intro1];

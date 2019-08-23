@@ -5,9 +5,9 @@ import { resolve } from 'path';
 import TelegrafI18n from 'telegraf-i18n';
 import { createConnection } from 'typeorm';
 
-import introduction, { IntroductionScenes } from './stages/introduction/index';
-
+import stages from './stages';
 import { logger } from './logger';
+import { IntroductionScenes } from './stages/introduction';
 
 const session = require('telegraf/session');
 
@@ -28,7 +28,7 @@ config({ path: resolve(__dirname, '../.env') });
     const bot = new Telegraf(process.env.TOKEN || '');
     bot.use(session());
     bot.use(i18n.middleware());
-    bot.use(introduction.middleware());
+    bot.use(stages.middleware());
     bot.on('message', ctx => ctx.scene.enter(IntroductionScenes.Intro1));
     bot.startPolling();
     logger.info('Bot started');
