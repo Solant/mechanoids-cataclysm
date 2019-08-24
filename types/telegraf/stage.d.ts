@@ -3,8 +3,8 @@ declare module 'telegraf/stage' {
     import BaseScene from "telegraf/scenes/base";
 
     export default class Stage<TContext extends ContextMessageUpdate> extends Composer<TContext> {
-        constructor(scenes: [BaseScene<TContext>], options?: any);
-        register(...scenes: [BaseScene<TContext>]): this;
+        constructor(scenes: BaseScene<TContext>[], options?: any);
+        register(...scenes: BaseScene<TContext>[]): this;
         middleware(): Middleware<TContext>;
     }
 }

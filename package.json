@@ -6,7 +6,10 @@
   "scripts": {
     "start": "ts-node --project tsconfig.json src/index.ts",
     "test": "echo \"Error: no test specified\" && exit 1",
-    "lint": "eslint --ext .js,.jsx,.ts,.tsx ./src"
+    "lint": "eslint --ext .js,.jsx,.ts,.tsx ./src",
+    "typeorm": "ts-node ./node_modules/typeorm/cli.js",
+    "db:drop": "npm run typeorm schema:drop",
+    "db:init" : "npm run typeorm schema:sync && npm run typeorm migration:run"
   },
   "keywords": [],
   "author": "",
@@ -24,6 +27,7 @@
     "telegraf-i18n": "^6.5.0",
     "ts-node": "^8.2.0",
     "ts-optchain": "^0.1.7",
+    "tsconfig-paths": "^3.8.0",
     "typeorm": "^0.2.18",
     "typescript": "^3.5.1",
     "winston": "^3.2.1"

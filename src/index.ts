@@ -4,10 +4,10 @@ import { config } from 'dotenv';
 import { resolve } from 'path';
 import TelegrafI18n from 'telegraf-i18n';
 import { createConnection } from 'typeorm';
-import introduction from './stages/introduction/index';
-import { User } from './models/User';
 
+import stages from './stages';
 import { logger } from './logger';
+import { IntroductionScenes } from './stages/introduction';
 
 const session = require('telegraf/session');
 
@@ -15,19 +15,7 @@ config({ path: resolve(__dirname, '../.env') });
 
 (async () => {
     logger.info('Connecting to database');
-    await createConnection({
-        type: 'postgres',
-        host: process.env.DB_HOST || '',
-        port: Number.parseInt(process.env.DB_PORT || '0', 10),
-        username: process.env.DB_USERNAME || '',
-        password: process.env.DB_PASSWORD || '',
-        database: process.env.DB_NAME || '',
-        entities: [
-            User,
-        ],
-        synchronize: true,
-        logging: false,
-    });
+    await createConnection();
     logger.info('Database connected');
 
     logger.info('Starting bot');
@@ -40,8 +28,8 @@ config({ path: resolve(__dirname, '../.env') });
     const bot = new Telegraf(process.env.TOKEN || '');
     bot.use(session());
     bot.use(i18n.middleware());
-    bot.use(introduction.middleware());
-    bot.on('message', ctx => ctx.scene.enter('intro1'));
+    bot.use(stages.middleware());
+    bot.on('message', ctx => ctx.scene.enter(IntroductionScenes.Intro1));
     bot.startPolling();
     logger.info('Bot started');
 })();
