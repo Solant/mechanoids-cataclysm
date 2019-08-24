@@ -7,7 +7,9 @@
     "start": "ts-node --project tsconfig.json src/index.ts",
     "test": "echo \"Error: no test specified\" && exit 1",
     "lint": "eslint --ext .js,.jsx,.ts,.tsx ./src",
-    "typeorm": "ts-node ./node_modules/typeorm/cli.js"
+    "typeorm": "ts-node ./node_modules/typeorm/cli.js",
+    "db:drop": "npm run typeorm schema:drop",
+    "db:init" : "npm run typeorm schema:sync && npm run typeorm migration:run"
   },
   "keywords": [],
   "author": "",
