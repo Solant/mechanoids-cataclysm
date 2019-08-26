@@ -26,8 +26,8 @@ intro1
             return ctx.reply(ctx.i18n.t('getNameLength'));
         }
 
-        const otherUser = await getRepository(User).findOne({ where: { name } });
-        if (otherUser !== undefined) {
+        const otherUsers = await getRepository(User).count({ where: { name } });
+        if (otherUsers > 0) {
             return ctx.reply(ctx.i18n.t('getNameExists'));
         }
 
@@ -35,7 +35,8 @@ intro1
         newUser.name = name;
         newUser.userId = ctx.from!.id;
         newUser.chatId = ctx.chat!.id;
-        newUser.location = (await getRepository(Location).findOne(1))!;
+        newUser.location = await getRepository(Location)
+            .findOneOrFail({ where: { isStartingZone: true } });
         await getRepository(User).save(newUser);
         await ctx.reply(ctx.i18n.t('story', { userName: newUser.name }));
         return ctx.scene.enter(LocationScenes.Intro);

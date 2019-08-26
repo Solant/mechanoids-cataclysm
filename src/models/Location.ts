@@ -7,4 +7,7 @@ export class Location {
 
     @Column()
     name!: string;
+
+    @Column()
+    isStartingZone!: boolean;
 }
