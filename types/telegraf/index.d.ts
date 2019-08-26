@@ -9,5 +9,8 @@ declare module 'telegraf' {
             reenter<TContext extends ContextMessageUpdate>(): Middleware<TContext>,
             leave<TContext extends ContextMessageUpdate>(): Middleware<TContext>,
         },
+        session: {
+            userId: number,
+        }
     }
 }

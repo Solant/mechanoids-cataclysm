@@ -8,7 +8,7 @@ import { Location } from '../models/Location';
 import { LocationScenes } from './location';
 
 export enum IntroductionScenes {
-    Intro1 = 'intro1',
+    Intro1 = 'introduction:1',
 }
 
 const intro1 = new BaseScene(IntroductionScenes.Intro1);
@@ -37,7 +37,9 @@ intro1
         newUser.chatId = ctx.chat!.id;
         newUser.location = await getRepository(Location)
             .findOneOrFail({ where: { isStartingZone: true } });
-        await getRepository(User).save(newUser);
+        const savedUser = await getRepository(User).save(newUser);
+        ctx.session.userId = savedUser.id;
+
         await ctx.reply(ctx.i18n.t('story', { userName: newUser.name }));
         return ctx.scene.enter(LocationScenes.Intro);
     });

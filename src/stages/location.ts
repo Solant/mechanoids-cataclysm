@@ -6,7 +6,7 @@ import { Location } from '../models/Location';
 import { logger } from '../logger';
 
 export enum LocationScenes {
-    Intro = 'intro',
+    Intro = 'location:1',
 }
 
 const enter = new BaseScene(LocationScenes.Intro);

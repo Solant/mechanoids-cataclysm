@@ -9,7 +9,7 @@ import stages from './stages';
 import { logger } from './logger';
 import { IntroductionScenes } from './stages/introduction';
 
-const session = require('telegraf/session');
+import { createSession } from './middlewares/session';
 
 config({ path: resolve(__dirname, '../.env') });
 
@@ -26,7 +26,7 @@ config({ path: resolve(__dirname, '../.env') });
     });
 
     const bot = new Telegraf(process.env.TOKEN || '');
-    bot.use(session());
+    bot.use(createSession());
     bot.use(i18n.middleware());
     bot.use(stages.middleware());
     bot.on('message', ctx => ctx.scene.enter(IntroductionScenes.Intro1));

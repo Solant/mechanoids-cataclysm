@@ -5,9 +5,9 @@ export class Location {
     @PrimaryGeneratedColumn()
     id!: number;
 
-    @Column()
+    @Column({ nullable: false })
     name!: string;
 
-    @Column()
+    @Column({ nullable: false })
     isStartingZone!: boolean;
 }
