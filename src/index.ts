@@ -31,7 +31,7 @@ config({ path: resolve(__dirname, '../.env') });
     bot.use(createPerformance());
     bot.use(i18n.middleware());
     bot.use(stages.middleware());
-    bot.on('message', ctx => ctx.scene.enter(IntroductionScenes.Intro1));
+    bot.on('message', ctx => ctx.scene.reenter());
     bot.startPolling();
     logger.info('Bot started');
 })();
