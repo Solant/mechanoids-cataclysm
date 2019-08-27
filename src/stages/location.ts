@@ -40,7 +40,7 @@ enter.on('callback_query', async (ctx, next) => {
         });
         await ctx.answerCbQuery();
     }
-    if (next) next();
+    if (next) await next();
 });
 
 enter.on('callback_query', async (ctx, next) => {
@@ -59,7 +59,7 @@ enter.on('callback_query', async (ctx, next) => {
         }
         await ctx.answerCbQuery();
     }
-    if (next) next();
+    if (next) await next();
 });
 
 

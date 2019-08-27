@@ -10,6 +10,7 @@ import { logger } from './logger';
 import { IntroductionScenes } from './stages/introduction';
 
 import { createSession } from './middlewares/session';
+import { createPerformance } from './middlewares/performance';
 
 config({ path: resolve(__dirname, '../.env') });
 
@@ -27,6 +28,7 @@ config({ path: resolve(__dirname, '../.env') });
 
     const bot = new Telegraf(process.env.TOKEN || '');
     bot.use(createSession());
+    bot.use(createPerformance());
     bot.use(i18n.middleware());
     bot.use(stages.middleware());
     bot.on('message', ctx => ctx.scene.enter(IntroductionScenes.Intro1));

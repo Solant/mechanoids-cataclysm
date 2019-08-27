@@ -1,5 +1,6 @@
 import { ContextMessageUpdate, Middleware } from 'telegraf';
 import { getRepository } from 'typeorm';
+import { performance } from 'perf_hooks';
 import { Session } from '../models/Session';
 
 type SessionData = any;
@@ -13,7 +14,8 @@ export function createSession(): Middleware<ContextMessageUpdate> {
         const sessionData: SessionData = {};
         let isNewSession = true;
 
-        sessionRepo
+        const t1 = performance.now();
+        return sessionRepo
             .findOne({
                 where: { userId, chatId },
             })
@@ -24,6 +26,9 @@ export function createSession(): Middleware<ContextMessageUpdate> {
                 }
                 // @ts-ignore
                 ctx.session = sessionData;
+                // @ts-ignore
+                // eslint-disable-next-line no-underscore-dangle
+                ctx.__sessionQueryTime = performance.now() - t1;
             })
             .then(() => (next ? next() : undefined))
             .then(() => {
