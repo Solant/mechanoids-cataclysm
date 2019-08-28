@@ -3,14 +3,15 @@ import Telegraf from 'telegraf';
 import { config } from 'dotenv';
 import { resolve } from 'path';
 import TelegrafI18n from 'telegraf-i18n';
-import { createConnection } from 'typeorm';
+import { createConnection, getRepository } from 'typeorm';
 
+import dayjs from 'dayjs';
 import stages from './stages';
 import { logger } from './logger';
-import { IntroductionScenes } from './stages/introduction';
 
 import { createSession } from './middlewares/session';
 import { createPerformance } from './middlewares/performance';
+import { DeferredMessage } from './models/DeferredMessage';
 
 config({ path: resolve(__dirname, '../.env') });
 
@@ -34,4 +35,20 @@ config({ path: resolve(__dirname, '../.env') });
     bot.on('message', ctx => ctx.scene.reenter());
     bot.startPolling();
     logger.info('Bot started');
+
+    setInterval(() => {
+        function sendMessageAndDelete(msg: DeferredMessage) {
+            return Promise.all([
+                bot.telegram.sendMessage(msg.chatId, msg.text, JSON.parse(msg.extra)),
+                getRepository(DeferredMessage).delete(msg.id),
+            ]);
+        }
+
+        getRepository(DeferredMessage)
+            .createQueryBuilder()
+            .where('date < :now')
+            .setParameter('now', dayjs().toDate())
+            .getMany()
+            .then(msgs => msgs.forEach(sendMessageAndDelete));
+    }, 10000);
 })();

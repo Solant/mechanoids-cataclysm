@@ -1,10 +1,12 @@
 import BaseScene from 'telegraf/scenes/base';
 import { getRepository } from 'typeorm';
+import dayjs from 'dayjs';
 
 import { ContextMessageUpdate, Markup, Middleware } from 'telegraf';
 import { User } from '../models/User';
 import { Location } from '../models/Location';
 import { logger } from '../logger';
+import { DeferredMessage } from '../models/DeferredMessage';
 
 export enum LocationScenes {
     Intro = 'location:1',
@@ -65,15 +67,20 @@ map.on('callback_query', async (ctx, next) => {
             return ctx.reply('Невозможно отправиться в эту локацию');
         }
 
-        setTimeout(() => {
-            ctx.reply('Вы прибыли на место', {
-                reply_markup: Markup.inlineKeyboard([
-                    Markup.callbackButton('Продолжить', CallbackActions.EnterBuilding),
-                ]),
-            });
-            getRepository(User).update({ chatId: ctx.chat!.id }, { location });
-        }, 10000);
-        return ctx.scene.enter(LocationScenes.Travel);
+        const message = new DeferredMessage();
+        message.chatId = ctx.chat!.id;
+        message.date = dayjs().add(10, 'second').toDate();
+        message.text = 'Вы прибыли на место';
+        message.extra = JSON.stringify({
+            reply_markup: Markup.inlineKeyboard([
+                Markup.callbackButton('Продолжить', CallbackActions.EnterBuilding),
+            ]),
+        });
+
+        return Promise.all([
+            getRepository(DeferredMessage).save(message),
+            ctx.scene.enter(LocationScenes.Travel),
+        ]);
     }
     // @ts-ignore
     return next();
