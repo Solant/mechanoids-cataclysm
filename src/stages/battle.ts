@@ -5,12 +5,12 @@ import {
     ActionItem,
     ChangeableStat, ItemEffect, PC, Player,
 } from './CharStats';
-import { performance } from 'perf_hooks';
 
 const battle = new BaseScene('battle:1');
 
 interface BattleSession {
     id: string,
+    duration: number,
     playerOne: Player,
     playerTwo: Player,
     actionQueue:
@@ -30,8 +30,8 @@ function getStatMarkup<T>(stat: ChangeableStat<T>): string {
 }
 
 function handleTick(tg: Telegram): void {
-    function getText(self: Player, enemy: Player): string {
-        let result = '';
+    function getText(self: Player, enemy: Player, session: BattleSession): string {
+        let result = `Время: ${(session.duration / 1000).toFixed(2)} секунд\n`;
         result += 'Ваш глайдер:\n';
         result += `HP: ${getStatMarkup(self.hp)}\n`;
         result += `SP: ${getStatMarkup(self.shield)}\n`;
@@ -66,7 +66,7 @@ function handleTick(tg: Telegram): void {
             self.chatId,
             self.messageId,
             undefined,
-            getText(self, enemy),
+            getText(self, enemy, session),
             getMarkup(self, session),
         );
     }
@@ -80,6 +80,7 @@ function handleTick(tg: Telegram): void {
                 a.effect(a.source, a.target, a.item);
             }
         }
+        session.duration += tickRate;
         updatePlayerOnDemand(session.playerOne, session.playerTwo, session);
         updatePlayerOnDemand(session.playerTwo, session.playerOne, session);
     }
@@ -89,6 +90,7 @@ battle.enter(async ctx => {
     const msg = await ctx.reply('Hehe', { reply_markup: { inline_keyboard: [[{ text: 'asd', callback_data: 'q' }]] } });
     battleSessions.push({
         id: uniqueId(),
+        duration: 0,
         actionQueue: [],
         playerOne: {
             type: 'pc',
