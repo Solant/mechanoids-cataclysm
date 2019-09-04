@@ -7,16 +7,20 @@ import { User } from '../models/User';
 import { Location } from '../models/Location';
 import { logger } from '../logger';
 import { DeferredMessage } from '../models/DeferredMessage';
+import { getExplorationLevel } from '../services/ExperienceService';
+import { RadiantQuest } from '../models/RadiantQuest';
 
 export enum LocationScenes {
     Intro = 'location:1',
     Map = 'location:map',
     Travel = 'location:travel',
+    Quests = 'location:quests',
 }
 
 enum CallbackActions {
     EnterBuilding = 'enter_building',
     BackToEntrance = 'enter_entrance',
+    EnterQuestsScreen = 'enter_quests',
 }
 
 const enter = new BaseScene(LocationScenes.Intro);
@@ -28,10 +32,14 @@ enter.enter(async ctx => {
     return ctx.reply(ctx.i18n.t('buildingGreeting', { locationName }),
         {
             reply_markup: {
-                inline_keyboard: [[{ text: 'Вылететь', callback_data: 'travel' }]],
+                inline_keyboard: [
+                    [{ text: 'Вылететь', callback_data: 'travel' }],
+                    [{ text: 'Задания', callback_data: CallbackActions.EnterQuestsScreen }],
+                ],
             },
         });
-});
+})
+    .on('callback_query', replyCb(CallbackActions.EnterQuestsScreen, ctx => ctx.scene.enter(LocationScenes.Quests)));
 
 enter.on('callback_query', async (ctx, next) => {
     if (ctx.callbackQuery!.data === 'travel') {
@@ -57,9 +65,7 @@ map.enter(async ctx => {
         },
     });
 })
-    .on('callback_query', replyCb(CallbackActions.BackToEntrance, (ctx) => {
-        return ctx.scene.enter(LocationScenes.Intro);
-    }));
+    .on('callback_query', replyCb(CallbackActions.BackToEntrance, ctx => ctx.scene.enter(LocationScenes.Intro)));
 
 map.on('callback_query', async (ctx, next) => {
     if (ctx.callbackQuery!.data!.startsWith('travel-to')) {
@@ -91,6 +97,20 @@ map.on('callback_query', async (ctx, next) => {
     return next();
 });
 
+const quests = new BaseScene(LocationScenes.Quests)
+    .enter(async ctx => {
+        const user = await getRepository(User).findOneOrFail(ctx.session.userId);
+        const level = getExplorationLevel(user);
+
+        const availableQuests = await getRepository(RadiantQuest)
+            .createQueryBuilder()
+            .where('"lvlRestriction" <= :level')
+            .setParameter('level', level)
+            .getMany();
+
+        return ctx.reply(availableQuests.map(a => a.name).join(', '));
+    });
+
 const travel = new BaseScene(LocationScenes.Travel);
 travel
     .enter(ctx => ctx.reply('Вылетаем, прибытие через 10 секунд'))
@@ -111,4 +131,4 @@ function replyCb(action: string, cb: MiddlewareCallback): Middleware<ContextMess
     };
 }
 
-export default [enter, map, travel];
+export default [enter, map, travel, quests];

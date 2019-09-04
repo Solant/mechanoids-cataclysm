@@ -20,4 +20,7 @@ export class User {
     @ManyToOne(() => Location)
     @JoinColumn()
     location!: Location;
+
+    @Column({ nullable: false, default: 0 })
+    explorationExp!: number;
 }
