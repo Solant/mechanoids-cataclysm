@@ -21,6 +21,11 @@ enum CallbackActions {
     EnterBuilding = 'enter_building',
     BackToEntrance = 'enter_entrance',
     EnterQuestsScreen = 'enter_quests',
+    QuestPage = 'quest-page',
+}
+
+function cbData(action: string, data: string | number) {
+    return `${action}:${data}`;
 }
 
 const enter = new BaseScene(LocationScenes.Intro);
@@ -97,19 +102,47 @@ map.on('callback_query', async (ctx, next) => {
     return next();
 });
 
-const quests = new BaseScene(LocationScenes.Quests)
+
+async function getAvailableQuests(userId: number, page: number) {
+    const user = await getRepository(User).findOneOrFail(userId);
+    const level = getExplorationLevel(user);
+
+    const pageSize = 4;
+    const [availableQuests, size] = await getRepository(RadiantQuest)
+        .createQueryBuilder()
+        .where('"lvlRestriction" <= :level')
+        .skip(page * pageSize)
+        .take(pageSize)
+        .addOrderBy('name')
+        .setParameter('level', level)
+        .getManyAndCount();
+
+    const questButtons = availableQuests.map(q => [Markup.callbackButton(q.name, q.code)]);
+    const navigationButtons = [];
+    if (size > pageSize) {
+        if (page > 0) {
+            navigationButtons.push(Markup.callbackButton('<', cbData(CallbackActions.QuestPage, page - 1)));
+        }
+        if (page * (pageSize + 2) < size) {
+            navigationButtons.push(Markup.callbackButton('>', cbData(CallbackActions.QuestPage, page + 1)));
+        }
+    }
+    const back = Markup.callbackButton('Назад', '<==');
+
+    return Markup.inlineKeyboard([...questButtons, navigationButtons, [back]]);
+}
+
+const quests = new BaseScene(LocationScenes.Quests);
+quests
     .enter(async ctx => {
-        const user = await getRepository(User).findOneOrFail(ctx.session.userId);
-        const level = getExplorationLevel(user);
-
-        const availableQuests = await getRepository(RadiantQuest)
-            .createQueryBuilder()
-            .where('"lvlRestriction" <= :level')
-            .setParameter('level', level)
-            .getMany();
-
-        return ctx.reply(availableQuests.map(a => a.name).join(', '));
-    });
+        return ctx.reply('Список доступных заданий:', {
+            reply_markup: await getAvailableQuests(ctx.session.userId, 0),
+        });
+    })
+    .on('callback_query', replyCb(CallbackActions.QuestPage, (ctx, data) => {
+        return getAvailableQuests(ctx.session.userId, Number.parseInt(data, 10))
+            .then(res => ctx.editMessageReplyMarkup(res));
+    }));
 
 const travel = new BaseScene(LocationScenes.Travel);
 travel
