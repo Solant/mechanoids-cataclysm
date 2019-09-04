@@ -16,6 +16,7 @@ export enum LocationScenes {
 
 enum CallbackActions {
     EnterBuilding = 'enter_building',
+    BackToEntrance = 'enter_entrance',
 }
 
 const enter = new BaseScene(LocationScenes.Intro);
@@ -49,12 +50,16 @@ map.enter(async ctx => {
 
     const availableLocations = locations.filter(l => user.location.id !== l.id);
     const buttons = availableLocations.map(l => ([{ text: l.name, callback_data: `travel-to:${l.id}` }]));
+    buttons.push([{ text: '< Назад', callback_data: CallbackActions.BackToEntrance }]);
     return ctx.reply('Список доступных локаций:', {
         reply_markup: {
             inline_keyboard: buttons,
         },
     });
-});
+})
+    .on('callback_query', replyCb(CallbackActions.BackToEntrance, (ctx) => {
+        return ctx.scene.enter(LocationScenes.Intro);
+    }));
 
 map.on('callback_query', async (ctx, next) => {
     if (ctx.callbackQuery!.data!.startsWith('travel-to')) {
