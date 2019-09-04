@@ -22,6 +22,7 @@ enum CallbackActions {
     BackToEntrance = 'enter_entrance',
     EnterQuestsScreen = 'enter_quests',
     QuestPage = 'quest-page',
+    QuestInfo = 'quest-info',
 }
 
 function cbData(action: string, data: string | number) {
@@ -117,7 +118,9 @@ async function getAvailableQuests(userId: number, page: number) {
         .setParameter('level', level)
         .getManyAndCount();
 
-    const questButtons = availableQuests.map(q => [Markup.callbackButton(q.name, q.code)]);
+    const questButtons = availableQuests
+        .map(q => [Markup.callbackButton(q.name, cbData(CallbackActions.QuestInfo, q.code))]);
+
     const navigationButtons = [];
     if (size > pageSize) {
         if (page > 0) {
@@ -134,14 +137,23 @@ async function getAvailableQuests(userId: number, page: number) {
 
 const quests = new BaseScene(LocationScenes.Quests);
 quests
-    .enter(async ctx => {
-        return ctx.reply('Список доступных заданий:', {
-            reply_markup: await getAvailableQuests(ctx.session.userId, 0),
+    .enter(async ctx => ctx.reply('Список доступных заданий:', {
+        reply_markup: await getAvailableQuests(ctx.session.userId, 0),
+    }))
+    .on('callback_query', replyCb(CallbackActions.QuestPage, (ctx, data) => getAvailableQuests(ctx.session.userId, Number.parseInt(data, 10))
+        .then(res => ctx.editMessageText('Список заданий:', { reply_markup: res }))))
+    .on('callback_query', replyCb(CallbackActions.QuestInfo, async (ctx, data) => {
+        const quest = await getRepository(RadiantQuest)
+            .findOneOrFail({ where: { code: data } });
+
+        return ctx.editMessageText(quest.description, {
+            reply_markup: {
+                inline_keyboard: [
+                    [{ text: 'Принять', callback_data: 'qwe' }],
+                    [{ text: 'Назад', callback_data: cbData(CallbackActions.QuestPage, 0) }],
+                ],
+            },
         });
-    })
-    .on('callback_query', replyCb(CallbackActions.QuestPage, (ctx, data) => {
-        return getAvailableQuests(ctx.session.userId, Number.parseInt(data, 10))
-            .then(res => ctx.editMessageReplyMarkup(res));
     }));
 
 const travel = new BaseScene(LocationScenes.Travel);
