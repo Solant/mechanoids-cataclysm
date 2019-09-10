@@ -12,7 +12,8 @@ export function replyCb(action: string, cb: MiddlewareCallback): Middleware<Cont
     return function handler(ctx, next) {
         if (ctx.callbackQuery!.data!.startsWith(action)) {
             return cb(ctx, ctx.callbackQuery!.data!.split(':')[1] || '')
-                .then(() => ctx.answerCbQuery());
+                .then(() => ctx.answerCbQuery())
+                .catch((e: string) => ctx.answerCbQuery(e));
         }
         // @ts-ignore
         return next();

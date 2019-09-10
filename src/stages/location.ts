@@ -1,6 +1,7 @@
 import BaseScene from 'telegraf/scenes/base';
 import { getRepository } from 'typeorm';
 import dayjs from 'dayjs';
+import { isLeft } from 'fp-ts/lib/Either';
 
 import { Markup } from 'telegraf';
 import { User } from '../models/User';
@@ -10,15 +11,20 @@ import { DeferredMessage } from '../models/DeferredMessage';
 import { getExplorationLevel } from '../services/ExperienceService';
 import { RadiantQuest } from '../models/RadiantQuest';
 import { replyCb, createCb } from './callbacks';
+import { RadiantQuestsService } from '../services/RadiantQuestsService';
+import {DeferredMessagesService} from "../services/DeferredMessagesService";
 
 export enum LocationScenes {
+    Busy = 'location:busy',
     Intro = 'location:1',
     Map = 'location:map',
     Travel = 'location:travel',
     Quests = 'location:quests',
+    ActiveQuest = 'location:active-quest',
 }
 
 enum CallbackActions {
+    StartQuest = 'start_quest',
     EnterBuilding = 'enter_building',
     BackToEntrance = 'enter_entrance',
     EnterQuestsScreen = 'enter_quests',
@@ -148,12 +154,32 @@ quests
         return ctx.editMessageText(quest.description, {
             reply_markup: {
                 inline_keyboard: [
-                    [{ text: 'Принять', callback_data: 'qwe' }],
+                    [{ text: 'Принять', callback_data: createCb(CallbackActions.StartQuest, quest.id) }],
                     [{ text: 'Назад', callback_data: createCb(CallbackActions.QuestPage, 0) }],
                 ],
             },
         });
+    }))
+    .on('callback_query', replyCb(CallbackActions.StartQuest, async (ctx, questId) => {
+        const result = await RadiantQuestsService.canStartQuest(questId, ctx.session.userId);
+
+        if (isLeft(result)) {
+            throw result.left;
+        }
+
+        DeferredMessagesService.sendLater(ctx.chat!.id, result.right, 'Задание выполнено', JSON.stringify({
+            reply_markup: Markup.inlineKeyboard([
+                Markup.callbackButton('Продолжить', CallbackActions.EnterBuilding),
+            ]),
+        }));
+
+        await ctx.reply(`Задание займет ${result.right}ms`);
+        return ctx.scene.enter(LocationScenes.Busy, undefined, true);
     }));
+
+const busy = new BaseScene(LocationScenes.Busy);
+busy.enter(({ reply }) => reply('Вы заняты выполнением действия'));
+busy.on('callback_query', replyCb(CallbackActions.EnterBuilding, ctx => ctx.scene.enter(LocationScenes.Intro)));
 
 const travel = new BaseScene(LocationScenes.Travel);
 travel
@@ -161,4 +187,4 @@ travel
     .on('callback_query', replyCb(CallbackActions.EnterBuilding, ctx => ctx.scene.enter(LocationScenes.Intro)));
 
 
-export default [enter, map, travel, quests];
+export default [enter, map, travel, quests, busy];
