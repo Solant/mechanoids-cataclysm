@@ -2,13 +2,14 @@ import BaseScene from 'telegraf/scenes/base';
 import { getRepository } from 'typeorm';
 import dayjs from 'dayjs';
 
-import { ContextMessageUpdate, Markup, Middleware } from 'telegraf';
+import { Markup } from 'telegraf';
 import { User } from '../models/User';
 import { Location } from '../models/Location';
 import { logger } from '../logger';
 import { DeferredMessage } from '../models/DeferredMessage';
 import { getExplorationLevel } from '../services/ExperienceService';
 import { RadiantQuest } from '../models/RadiantQuest';
+import { replyCb, createCb } from './callbacks';
 
 export enum LocationScenes {
     Intro = 'location:1',
@@ -23,10 +24,6 @@ enum CallbackActions {
     EnterQuestsScreen = 'enter_quests',
     QuestPage = 'quest-page',
     QuestInfo = 'quest-info',
-}
-
-function cbData(action: string, data: string | number) {
-    return `${action}:${data}`;
 }
 
 const enter = new BaseScene(LocationScenes.Intro);
@@ -119,15 +116,15 @@ async function getAvailableQuests(userId: number, page: number) {
         .getManyAndCount();
 
     const questButtons = availableQuests
-        .map(q => [Markup.callbackButton(q.name, cbData(CallbackActions.QuestInfo, q.code))]);
+        .map(q => [Markup.callbackButton(q.name, createCb(CallbackActions.QuestInfo, q.code))]);
 
     const navigationButtons = [];
     if (size > pageSize) {
         if (page > 0) {
-            navigationButtons.push(Markup.callbackButton('<', cbData(CallbackActions.QuestPage, page - 1)));
+            navigationButtons.push(Markup.callbackButton('<', createCb(CallbackActions.QuestPage, page - 1)));
         }
         if (page * (pageSize + 2) < size) {
-            navigationButtons.push(Markup.callbackButton('>', cbData(CallbackActions.QuestPage, page + 1)));
+            navigationButtons.push(Markup.callbackButton('>', createCb(CallbackActions.QuestPage, page + 1)));
         }
     }
     const back = Markup.callbackButton('Назад', '<==');
@@ -140,8 +137,10 @@ quests
     .enter(async ctx => ctx.reply('Список доступных заданий:', {
         reply_markup: await getAvailableQuests(ctx.session.userId, 0),
     }))
-    .on('callback_query', replyCb(CallbackActions.QuestPage, (ctx, data) => getAvailableQuests(ctx.session.userId, Number.parseInt(data, 10))
-        .then(res => ctx.editMessageText('Список заданий:', { reply_markup: res }))))
+    .on('callback_query', replyCb(CallbackActions.QuestPage, (ctx, data) => {
+        const q = getAvailableQuests(ctx.session.userId, Number.parseInt(data, 10));
+        return q.then(res => ctx.editMessageText('Список заданий:', { reply_markup: res }));
+    }))
     .on('callback_query', replyCb(CallbackActions.QuestInfo, async (ctx, data) => {
         const quest = await getRepository(RadiantQuest)
             .findOneOrFail({ where: { code: data } });
@@ -150,7 +149,7 @@ quests
             reply_markup: {
                 inline_keyboard: [
                     [{ text: 'Принять', callback_data: 'qwe' }],
-                    [{ text: 'Назад', callback_data: cbData(CallbackActions.QuestPage, 0) }],
+                    [{ text: 'Назад', callback_data: createCb(CallbackActions.QuestPage, 0) }],
                 ],
             },
         });
@@ -161,19 +160,5 @@ travel
     .enter(ctx => ctx.reply('Вылетаем, прибытие через 10 секунд'))
     .on('callback_query', replyCb(CallbackActions.EnterBuilding, ctx => ctx.scene.enter(LocationScenes.Intro)));
 
-
-interface MiddlewareCallback {
-    (ctx: ContextMessageUpdate, data: string): Promise<any> | any
-}
-function replyCb(action: string, cb: MiddlewareCallback): Middleware<ContextMessageUpdate> {
-    return function handler(ctx, next) {
-        if (ctx.callbackQuery!.data!.startsWith(action)) {
-            return cb(ctx, ctx.callbackQuery!.data!.split(':')[1] || '')
-                .then(() => ctx.answerCbQuery());
-        }
-        // @ts-ignore
-        return next();
-    };
-}
 
 export default [enter, map, travel, quests];
