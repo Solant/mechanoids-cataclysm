@@ -2,7 +2,7 @@ import { inRange } from 'lodash';
 import { User } from '../models/User';
 
 export function getExplorationLevel(user: User): number {
-    const experience = user.explorationExp;
+    const experience = user.exp;
     const ranges: Map<number, [number, number]> = new Map();
     ranges.set(1, [0, 100]);
     ranges.set(2, [100, 300]);
