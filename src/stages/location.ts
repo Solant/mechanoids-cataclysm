@@ -3,7 +3,7 @@ import { getRepository } from 'typeorm';
 import dayjs from 'dayjs';
 import { isLeft } from 'fp-ts/lib/Either';
 
-import { Markup } from 'telegraf';
+import { Extra, Markup } from 'telegraf';
 import { User } from '../models/User';
 import { Location } from '../models/Location';
 import { logger } from '../logger';
@@ -12,7 +12,7 @@ import { getExplorationLevel } from '../services/ExperienceService';
 import { RadiantQuest } from '../models/RadiantQuest';
 import { replyCb, createCb } from './callbacks';
 import { RadiantQuestsService } from '../services/RadiantQuestsService';
-import {DeferredMessagesService} from "../services/DeferredMessagesService";
+import { DeferredMessagesService } from '../services/DeferredMessagesService';
 
 export enum LocationScenes {
     Busy = 'location:busy',
@@ -30,6 +30,7 @@ enum CallbackActions {
     EnterQuestsScreen = 'enter_quests',
     QuestPage = 'quest-page',
     QuestInfo = 'quest-info',
+    CompleteRadiantQuestAndEnter = 'crqae',
 }
 
 const enter = new BaseScene(LocationScenes.Intro);
@@ -169,7 +170,7 @@ quests
 
         DeferredMessagesService.sendLater(ctx.chat!.id, result.right, 'Задание выполнено', JSON.stringify({
             reply_markup: Markup.inlineKeyboard([
-                Markup.callbackButton('Продолжить', CallbackActions.EnterBuilding),
+                Markup.callbackButton('Продолжить', createCb(CallbackActions.CompleteRadiantQuestAndEnter, questId)),
             ]),
         }));
 
@@ -179,7 +180,15 @@ quests
 
 const busy = new BaseScene(LocationScenes.Busy);
 busy.enter(({ reply }) => reply('Вы заняты выполнением действия'));
-busy.on('callback_query', replyCb(CallbackActions.EnterBuilding, ctx => ctx.scene.enter(LocationScenes.Intro)));
+busy.on('callback_query', replyCb(CallbackActions.CompleteRadiantQuestAndEnter, async (ctx, questId) => {
+    const res = await RadiantQuestsService.completeQuest(questId);
+    if (isLeft(res)) {
+        throw res.left;
+    }
+    await ctx.replyWithHTML(res.right.response);
+    await ctx.deleteMessage();
+    return ctx.scene.enter(LocationScenes.Intro);
+}));
 
 const travel = new BaseScene(LocationScenes.Travel);
 travel
