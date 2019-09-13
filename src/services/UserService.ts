@@ -1,6 +1,8 @@
 import { getRepository } from 'typeorm';
 import { User } from '../models/User';
 import { Rewardable } from '../models/experience';
+import { RadiantQuest } from '../models/RadiantQuest';
+import { right } from 'fp-ts/lib/Either';
 
 export class UserService {
     static async applyRewards(userId: string | number, reward: Rewardable) {
@@ -18,6 +20,19 @@ export class UserService {
         const user = await getRepository(User).findOneOrFail(userId, { relations: ['location'] });
 
         const result = `Текущая локация: <b>${user.location.name}</b>\n`;
+        return result;
+    }
+
+    static async currentStatus(userId: string | number) {
+        const user = await getRepository(User).findOneOrFail(userId);
+
+        let result = '';
+        result += `💎 <b>${user.money}</b> кристаллов\n`;
+        result += `<b>${user.exp}</b> очков опыта\n`;
+        result += `<b>${user.courierExp}</b> очков курьерского рейтинга\n`;
+        result += `<b>${user.tradeExp}</b> очков торгового рейтинга\n`;
+        result += `<b>${user.battleExp}</b> очков боевого рейтинга\n`;
+
         return result;
     }
 }
