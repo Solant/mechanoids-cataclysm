@@ -33,6 +33,7 @@ config({ path: resolve(__dirname, '../.env') });
     bot.use(i18n.middleware());
     bot.use(stages.middleware());
     bot.on('message', ctx => ctx.scene.reenter());
+    bot.catch((err: any) => logger.error(err));
     bot.startPolling();
     logger.info('Bot started');
 
