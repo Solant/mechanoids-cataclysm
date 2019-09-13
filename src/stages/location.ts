@@ -1,37 +1,50 @@
 import BaseScene from 'telegraf/scenes/base';
 import { getRepository } from 'typeorm';
 import dayjs from 'dayjs';
+import { isLeft } from 'fp-ts/lib/Either';
 
-import { ContextMessageUpdate, Markup, Middleware } from 'telegraf';
+import { Markup } from 'telegraf';
 import { User } from '../models/User';
 import { Location } from '../models/Location';
 import { logger } from '../logger';
 import { DeferredMessage } from '../models/DeferredMessage';
+import { getExplorationLevel } from '../services/ExperienceService';
+import { RadiantQuest } from '../models/RadiantQuest';
+import { replyCb, createCb } from './callbacks';
+import { RadiantQuestsService } from '../services/RadiantQuestsService';
+import { DeferredMessagesService } from '../services/DeferredMessagesService';
+import { UserService } from '../services/UserService';
 
 export enum LocationScenes {
+    Busy = 'location:busy',
     Intro = 'location:1',
     Map = 'location:map',
     Travel = 'location:travel',
+    Quests = 'location:quests',
+    ActiveQuest = 'location:active-quest',
 }
 
 enum CallbackActions {
+    StartQuest = 'start_quest',
+    Travel = 'travel',
     EnterBuilding = 'enter_building',
     BackToEntrance = 'enter_entrance',
+    EnterQuestsScreen = 'enter_quests',
+    QuestPage = 'quest-page',
+    QuestInfo = 'quest-info',
+    CompleteRadiantQuestAndEnter = 'crqae',
 }
 
 const enter = new BaseScene(LocationScenes.Intro);
 enter.enter(async ctx => {
-    const user = await getRepository(User)
-        .findOne(ctx.session.userId, { relations: ['location'] });
-    const locationName = user!.location.name;
-
-    return ctx.reply(ctx.i18n.t('buildingGreeting', { locationName }),
-        {
-            reply_markup: {
-                inline_keyboard: [[{ text: 'Вылететь', callback_data: 'travel' }]],
-            },
-        });
-});
+    return ctx.replyWithHTML(await UserService.currentLocationStatus(ctx.session.userId), {
+        reply_markup: Markup.inlineKeyboard([
+            [Markup.callbackButton('Вылететь', CallbackActions.Travel)],
+            [Markup.callbackButton('Задания', CallbackActions.EnterQuestsScreen)],
+        ]),
+    });
+})
+    .on('callback_query', replyCb(CallbackActions.EnterQuestsScreen, ctx => ctx.scene.enter(LocationScenes.Quests)));
 
 enter.on('callback_query', async (ctx, next) => {
     if (ctx.callbackQuery!.data === 'travel') {
@@ -57,9 +70,7 @@ map.enter(async ctx => {
         },
     });
 })
-    .on('callback_query', replyCb(CallbackActions.BackToEntrance, (ctx) => {
-        return ctx.scene.enter(LocationScenes.Intro);
-    }));
+    .on('callback_query', replyCb(CallbackActions.BackToEntrance, ctx => ctx.scene.enter(LocationScenes.Intro)));
 
 map.on('callback_query', async (ctx, next) => {
     if (ctx.callbackQuery!.data!.startsWith('travel-to')) {
@@ -91,24 +102,96 @@ map.on('callback_query', async (ctx, next) => {
     return next();
 });
 
+
+async function getAvailableQuests(userId: number, page: number) {
+    const user = await getRepository(User).findOneOrFail(userId);
+    const level = getExplorationLevel(user);
+
+    const pageSize = 4;
+    const [availableQuests, size] = await getRepository(RadiantQuest)
+        .createQueryBuilder()
+        .where('"lvlRestriction" <= :level')
+        .skip(page * pageSize)
+        .take(pageSize)
+        .addOrderBy('name')
+        .setParameter('level', level)
+        .getManyAndCount();
+
+    const questButtons = availableQuests
+        .map(q => [Markup.callbackButton(q.name, createCb(CallbackActions.QuestInfo, q.code))]);
+
+    const navigationButtons = [];
+    if (size > pageSize) {
+        if (page > 0) {
+            navigationButtons.push(Markup.callbackButton('<', createCb(CallbackActions.QuestPage, page - 1)));
+        }
+        if (page * (pageSize + 2) < size) {
+            navigationButtons.push(Markup.callbackButton('>', createCb(CallbackActions.QuestPage, page + 1)));
+        }
+    }
+    const back = Markup.callbackButton('Назад', '<==');
+
+    return Markup.inlineKeyboard([...questButtons, navigationButtons, [back]]);
+}
+
+const quests = new BaseScene(LocationScenes.Quests);
+quests
+    .enter(async ctx => ctx.reply('Список доступных заданий:', {
+        reply_markup: await getAvailableQuests(ctx.session.userId, 0),
+    }))
+    .on('callback_query', replyCb(CallbackActions.QuestPage, (ctx, data) => {
+        const q = getAvailableQuests(ctx.session.userId, Number.parseInt(data, 10));
+        return q.then(res => ctx.editMessageText('Список заданий:', { reply_markup: res }));
+    }))
+    .on('callback_query', replyCb(CallbackActions.QuestInfo, async (ctx, data) => {
+        const quest = await getRepository(RadiantQuest)
+            .findOneOrFail({ where: { code: data } });
+
+        return ctx.editMessageText(quest.description, {
+            reply_markup: {
+                inline_keyboard: [
+                    [{ text: 'Принять', callback_data: createCb(CallbackActions.StartQuest, quest.id) }],
+                    [{ text: 'Назад', callback_data: createCb(CallbackActions.QuestPage, 0) }],
+                ],
+            },
+        });
+    }))
+    .on('callback_query', replyCb(CallbackActions.StartQuest, async (ctx, questId) => {
+        const result = await RadiantQuestsService.canStartQuest(questId, ctx.session.userId);
+
+        if (isLeft(result)) {
+            throw result.left;
+        }
+
+        DeferredMessagesService.sendLater(ctx.chat!.id, result.right, 'Задание выполнено', JSON.stringify({
+            reply_markup: Markup.inlineKeyboard([
+                Markup.callbackButton('Продолжить', createCb(CallbackActions.CompleteRadiantQuestAndEnter, questId)),
+            ]),
+        }));
+
+        await ctx.reply(`Задание займет ${result.right}ms`);
+        return ctx.scene.enter(LocationScenes.Busy, undefined, true);
+    }));
+
+const busy = new BaseScene(LocationScenes.Busy);
+busy.enter(({ reply }) => reply('Вы заняты выполнением действия'));
+busy.on('callback_query', replyCb(CallbackActions.CompleteRadiantQuestAndEnter, async (ctx, questId) => {
+    const res = await RadiantQuestsService.completeQuest(questId);
+    if (isLeft(res)) {
+        throw res.left;
+    }
+
+    const { reward, response } = res.right;
+    await UserService.applyRewards(ctx.session.userId, reward);
+    await ctx.replyWithHTML(response);
+    await ctx.deleteMessage();
+    return ctx.scene.enter(LocationScenes.Intro);
+}));
+
 const travel = new BaseScene(LocationScenes.Travel);
 travel
     .enter(ctx => ctx.reply('Вылетаем, прибытие через 10 секунд'))
     .on('callback_query', replyCb(CallbackActions.EnterBuilding, ctx => ctx.scene.enter(LocationScenes.Intro)));
 
 
-interface MiddlewareCallback {
-    (ctx: ContextMessageUpdate, data: string): Promise<any> | any
-}
-function replyCb(action: string, cb: MiddlewareCallback): Middleware<ContextMessageUpdate> {
-    return function handler(ctx, next) {
-        if (ctx.callbackQuery!.data!.startsWith(action)) {
-            return cb(ctx, ctx.callbackQuery!.data!.split(':')[1] || '')
-                .then(() => ctx.answerCbQuery());
-        }
-        // @ts-ignore
-        return next();
-    };
-}
-
-export default [enter, map, travel];
+export default [enter, map, travel, quests, busy];

@@ -1,29 +1,33 @@
 import {
-    Column, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn,
+    Column, Entity, PrimaryGeneratedColumn,
 } from 'typeorm';
-import { Location } from './Location';
 import { Rewardable } from './experience';
 
 @Entity()
-export class User implements Rewardable {
+export class RadiantQuest implements Rewardable {
     @PrimaryGeneratedColumn()
     id!: number;
 
-    @Column()
-    userId!: number;
+    @Column({ nullable: false, unique: true })
+    code!: string;
 
-    @Column()
-    chatId!: number;
-
-    @Column()
+    @Column({ nullable: false })
     name!: string;
 
-    @ManyToOne(() => Location)
-    @JoinColumn()
-    location!: Location;
+    @Column({ nullable: false })
+    description!: string;
+
+    @Column({ nullable: false })
+    baseDuration!: number;
+
+    @Column({ nullable: false })
+    lvlRestriction!: number;
 
     @Column({ nullable: false, default: 0 })
     battleExp!: number;
+
+    @Column({ nullable: false, default: 0 })
+    reward!: number;
 
     @Column({ nullable: false, default: 0 })
     courierExp!: number;
