@@ -3,7 +3,7 @@ import { getRepository } from 'typeorm';
 import dayjs from 'dayjs';
 import { isLeft } from 'fp-ts/lib/Either';
 
-import { Extra, Markup } from 'telegraf';
+import { Markup } from 'telegraf';
 import { User } from '../models/User';
 import { Location } from '../models/Location';
 import { logger } from '../logger';
@@ -13,6 +13,7 @@ import { RadiantQuest } from '../models/RadiantQuest';
 import { replyCb, createCb } from './callbacks';
 import { RadiantQuestsService } from '../services/RadiantQuestsService';
 import { DeferredMessagesService } from '../services/DeferredMessagesService';
+import { UserService } from '../services/UserService';
 
 export enum LocationScenes {
     Busy = 'location:busy',
@@ -185,7 +186,10 @@ busy.on('callback_query', replyCb(CallbackActions.CompleteRadiantQuestAndEnter, 
     if (isLeft(res)) {
         throw res.left;
     }
-    await ctx.replyWithHTML(res.right.response);
+
+    const { reward, response } = res.right;
+    await UserService.applyRewards(ctx.session.userId, reward);
+    await ctx.replyWithHTML(response);
     await ctx.deleteMessage();
     return ctx.scene.enter(LocationScenes.Intro);
 }));
