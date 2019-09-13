@@ -13,4 +13,11 @@ export class UserService {
             money: user.money + reward.money,
         });
     }
+
+    static async currentLocationStatus(userId: string | number) {
+        const user = await getRepository(User).findOneOrFail(userId, { relations: ['location'] });
+
+        const result = `Текущая локация: <b>${user.location.name}</b>\n`;
+        return result;
+    }
 }

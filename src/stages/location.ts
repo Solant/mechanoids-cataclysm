@@ -26,6 +26,7 @@ export enum LocationScenes {
 
 enum CallbackActions {
     StartQuest = 'start_quest',
+    Travel = 'travel',
     EnterBuilding = 'enter_building',
     BackToEntrance = 'enter_entrance',
     EnterQuestsScreen = 'enter_quests',
@@ -36,19 +37,12 @@ enum CallbackActions {
 
 const enter = new BaseScene(LocationScenes.Intro);
 enter.enter(async ctx => {
-    const user = await getRepository(User)
-        .findOne(ctx.session.userId, { relations: ['location'] });
-    const locationName = user!.location.name;
-
-    return ctx.reply(ctx.i18n.t('buildingGreeting', { locationName }),
-        {
-            reply_markup: {
-                inline_keyboard: [
-                    [{ text: 'Вылететь', callback_data: 'travel' }],
-                    [{ text: 'Задания', callback_data: CallbackActions.EnterQuestsScreen }],
-                ],
-            },
-        });
+    return ctx.replyWithHTML(await UserService.currentLocationStatus(ctx.session.userId), {
+        reply_markup: Markup.inlineKeyboard([
+            [Markup.callbackButton('Вылететь', CallbackActions.Travel)],
+            [Markup.callbackButton('Задания', CallbackActions.EnterQuestsScreen)],
+        ]),
+    });
 })
     .on('callback_query', replyCb(CallbackActions.EnterQuestsScreen, ctx => ctx.scene.enter(LocationScenes.Quests)));
 
