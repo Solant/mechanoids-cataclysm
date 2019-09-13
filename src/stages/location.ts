@@ -22,6 +22,7 @@ export enum LocationScenes {
     Travel = 'location:travel',
     Quests = 'location:quests',
     ActiveQuest = 'location:active-quest',
+    StatusScreen = 'location:status',
 }
 
 enum CallbackActions {
@@ -30,6 +31,7 @@ enum CallbackActions {
     EnterBuilding = 'enter_building',
     BackToEntrance = 'enter_entrance',
     EnterQuestsScreen = 'enter_quests',
+    EnterStatusScreen = 'enter_status',
     QuestPage = 'quest-page',
     QuestInfo = 'quest-info',
     CompleteRadiantQuestAndEnter = 'crqae',
@@ -41,10 +43,12 @@ enter.enter(async ctx => {
         reply_markup: Markup.inlineKeyboard([
             [Markup.callbackButton('Вылететь', CallbackActions.Travel)],
             [Markup.callbackButton('Задания', CallbackActions.EnterQuestsScreen)],
+            [Markup.callbackButton('Статус', CallbackActions.EnterStatusScreen)],
         ]),
     });
 })
-    .on('callback_query', replyCb(CallbackActions.EnterQuestsScreen, ctx => ctx.scene.enter(LocationScenes.Quests)));
+    .on('callback_query', replyCb(CallbackActions.EnterQuestsScreen, ctx => ctx.scene.enter(LocationScenes.Quests)))
+    .on('callback_query', replyCb(CallbackActions.EnterStatusScreen, ctx => ctx.scene.enter(LocationScenes.StatusScreen)));
 
 enter.on('callback_query', async (ctx, next) => {
     if (ctx.callbackQuery!.data === 'travel') {
@@ -129,7 +133,7 @@ async function getAvailableQuests(userId: number, page: number) {
             navigationButtons.push(Markup.callbackButton('>', createCb(CallbackActions.QuestPage, page + 1)));
         }
     }
-    const back = Markup.callbackButton('Назад', '<==');
+    const back = Markup.callbackButton('Назад', CallbackActions.EnterBuilding);
 
     return Markup.inlineKeyboard([...questButtons, navigationButtons, [back]]);
 }
@@ -156,6 +160,7 @@ quests
             },
         });
     }))
+    .on('callback_query', replyCb(CallbackActions.EnterBuilding, ctx => ctx.scene.enter(LocationScenes.Intro)))
     .on('callback_query', replyCb(CallbackActions.StartQuest, async (ctx, questId) => {
         const result = await RadiantQuestsService.canStartQuest(questId, ctx.session.userId);
 
@@ -188,10 +193,21 @@ busy.on('callback_query', replyCb(CallbackActions.CompleteRadiantQuestAndEnter, 
     return ctx.scene.enter(LocationScenes.Intro);
 }));
 
+const statusScreen = new BaseScene(LocationScenes.StatusScreen);
+statusScreen
+    .enter(async ctx => {
+        return ctx.replyWithHTML(await UserService.currentStatus(ctx.session.userId), {
+            reply_markup: Markup.inlineKeyboard([
+                [Markup.callbackButton('Назад', CallbackActions.EnterBuilding)],
+            ]),
+        });
+    })
+    .on('callback_query', replyCb(CallbackActions.EnterBuilding, ctx => ctx.scene.enter(LocationScenes.Intro)));
+
 const travel = new BaseScene(LocationScenes.Travel);
 travel
     .enter(ctx => ctx.reply('Вылетаем, прибытие через 10 секунд'))
     .on('callback_query', replyCb(CallbackActions.EnterBuilding, ctx => ctx.scene.enter(LocationScenes.Intro)));
 
 
-export default [enter, map, travel, quests, busy];
+export default [enter, map, travel, quests, busy, statusScreen];
