@@ -32,7 +32,13 @@ config({ path: resolve(__dirname, '../.env') });
     bot.use(createPerformance());
     bot.use(i18n.middleware());
     bot.use(stages.middleware());
-    bot.on('message', ctx => ctx.scene.reenter());
+    bot.on('message', ctx => {
+        // @ts-ignore
+        if (ctx.session.__scenes.current) {
+            return ctx.scene.reenter();
+        }
+        return ctx.scene.enter('introduction:1');
+    });
     bot.catch((err: any) => logger.error(err));
     bot.startPolling();
     logger.info('Bot started');
