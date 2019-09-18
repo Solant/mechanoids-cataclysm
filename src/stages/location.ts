@@ -122,7 +122,7 @@ async function getAvailableQuests(userId: number, page: number) {
         .getManyAndCount();
 
     const questButtons = availableQuests
-        .map(q => [Markup.callbackButton(q.name, createCb(CallbackActions.QuestInfo, q.code))]);
+        .map(q => [Markup.callbackButton(q.name, createCb(CallbackActions.QuestInfo, q.id))]);
 
     const navigationButtons = [];
     if (size > pageSize) {
@@ -148,13 +148,13 @@ quests
         return q.then(res => ctx.editMessageText('Список заданий:', { reply_markup: res }));
     }))
     .on('callback_query', replyCb(CallbackActions.QuestInfo, async (ctx, data) => {
-        const quest = await getRepository(RadiantQuest)
-            .findOneOrFail({ where: { code: data } });
+        const { response, id } = await RadiantQuestsService.getQuestInfo(data);
 
-        return ctx.editMessageText(quest.description, {
+        return ctx.editMessageText(response, {
+            parse_mode: 'HTML',
             reply_markup: {
                 inline_keyboard: [
-                    [{ text: 'Принять', callback_data: createCb(CallbackActions.StartQuest, quest.id) }],
+                    [{ text: 'Принять', callback_data: createCb(CallbackActions.StartQuest, id) }],
                     [{ text: 'Назад', callback_data: createCb(CallbackActions.QuestPage, 0) }],
                 ],
             },
