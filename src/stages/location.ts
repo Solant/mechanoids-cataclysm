@@ -1,6 +1,8 @@
 import BaseScene from 'telegraf/scenes/base';
 import { getRepository } from 'typeorm';
 import dayjs from 'dayjs';
+import 'dayjs/locale/ru';
+import relativeTime from 'dayjs/plugin/relativeTime';
 import { isLeft } from 'fp-ts/lib/Either';
 
 import { Markup } from 'telegraf';
@@ -14,6 +16,9 @@ import { replyCb, createCb } from './callbacks';
 import { RadiantQuestsService } from '../services/RadiantQuestsService';
 import { DeferredMessagesService } from '../services/DeferredMessagesService';
 import { UserService } from '../services/UserService';
+
+dayjs.extend(relativeTime);
+dayjs.locale('ru');
 
 export enum LocationScenes {
     Busy = 'location:busy',
@@ -174,7 +179,7 @@ quests
             ]),
         }));
 
-        await ctx.reply(`Задание займет ${result.right}ms`);
+        await ctx.reply(`Задание будет выполнено ${dayjs().add(result.right, 'millisecond').fromNow()}`);
         return ctx.scene.enter(LocationScenes.Busy, undefined, true);
     }));
 
