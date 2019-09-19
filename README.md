@@ -19,6 +19,5 @@ TYPEORM_MIGRATIONS_DIR = src/migrations
 
 ### Configure database
 ```bash
-npm run typeorm schema:sync
-npm run typeorm migration:run
+npm run typeorm db:init
 ```
