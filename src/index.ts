@@ -40,6 +40,9 @@ config({ path: resolve(__dirname, '../.env') });
         return ctx.scene.enter('introduction:1');
     });
     bot.catch((err: any) => logger.error(err));
+    bot.on('callback_query', ctx => {
+        return ctx.answerCbQuery('Невозможно выполнить данное действие');
+    });
     bot.startPolling();
     logger.info('Bot started');
 
