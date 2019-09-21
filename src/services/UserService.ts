@@ -29,7 +29,7 @@ export class UserService {
         const tradeRating = getTradeLevel(user);
         const battleRating = getBattleLevel(user);
 
-        let result = '';
+        let result = `Имя: <b>${user.name}</b>\n\n`;
         result += `💎 <b>${user.money}</b> кристаллов\n`;
         result += `📦 <b>${courierRating.value}</b> Курьерский рейтинг (${courierRating.current} / ${courierRating.next}, ${courierRating.percentage}%)\n`;
         result += `📈 <b>${tradeRating.value}</b> Торговый рейтинг (${tradeRating.current} / ${tradeRating.next}, ${tradeRating.percentage}%)\n`;
