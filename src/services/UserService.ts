@@ -3,6 +3,7 @@ import { User } from '../models/User';
 import { Rewardable } from '../models/experience';
 import { RadiantQuest } from '../models/RadiantQuest';
 import { right } from 'fp-ts/lib/Either';
+import { getCourierLevel } from './ExperienceService';
 
 export class UserService {
     static async applyRewards(userId: string | number, reward: Rewardable) {
@@ -25,11 +26,12 @@ export class UserService {
 
     static async currentStatus(userId: string | number) {
         const user = await getRepository(User).findOneOrFail(userId);
+        const courierRating = getCourierLevel(user);
 
         let result = '';
         result += `💎 <b>${user.money}</b> кристаллов\n`;
         result += `<b>${user.exp}</b> очков опыта\n`;
-        result += `<b>${user.courierExp}</b> очков курьерского рейтинга\n`;
+        result += `📦 <b>${courierRating.value}</b> (${courierRating.current} / ${courierRating.next}, ${courierRating.percentage}) Курьерский рейтинг\n`;
         result += `<b>${user.tradeExp}</b> очков торгового рейтинга\n`;
         result += `<b>${user.battleExp}</b> очков боевого рейтинга\n`;
 
