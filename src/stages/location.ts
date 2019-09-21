@@ -114,7 +114,7 @@ map.on('callback_query', async (ctx, next) => {
 
 async function getAvailableQuests(userId: number, page: number) {
     const user = await getRepository(User).findOneOrFail(userId);
-    const level = getExplorationLevel(user);
+    const level = getExplorationLevel(user).value;
 
     const pageSize = 4;
     const [availableQuests, size] = await getRepository(RadiantQuest)
