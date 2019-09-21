@@ -1,9 +1,7 @@
 import { getRepository } from 'typeorm';
 import { User } from '../models/User';
 import { Rewardable } from '../models/experience';
-import { RadiantQuest } from '../models/RadiantQuest';
-import { right } from 'fp-ts/lib/Either';
-import { getCourierLevel, getTradeLevel } from './ExperienceService';
+import { getBattleLevel, getCourierLevel, getTradeLevel } from './ExperienceService';
 
 export class UserService {
     static async applyRewards(userId: string | number, reward: Rewardable) {
@@ -29,13 +27,14 @@ export class UserService {
 
         const courierRating = getCourierLevel(user);
         const tradeRating = getTradeLevel(user);
+        const battleRating = getBattleLevel(user);
 
         let result = '';
         result += `💎 <b>${user.money}</b> кристаллов\n`;
-        result += `<b>${user.exp}</b> очков опыта\n`;
         result += `📦 <b>${courierRating.value}</b> Курьерский рейтинг (${courierRating.current} / ${courierRating.next}, ${courierRating.percentage}%)\n`;
         result += `📈 <b>${tradeRating.value}</b> Торговый рейтинг (${tradeRating.current} / ${tradeRating.next}, ${tradeRating.percentage}%)\n`;
-        result += `<b>${user.battleExp}</b> очков боевого рейтинга\n`;
+        result += `⚔️ <b>${battleRating.value}</b> Боевой рейтинг (${battleRating.current} / ${battleRating.next}, ${battleRating.percentage}%)\n`;
+        result += `\n<b>${user.exp}</b> очков опыта`;
 
         return result;
     }
