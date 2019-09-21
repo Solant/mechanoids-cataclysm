@@ -1,8 +1,7 @@
 import { getRepository } from 'typeorm';
 import { User } from '../models/User';
 import { Rewardable } from '../models/experience';
-import { RadiantQuest } from '../models/RadiantQuest';
-import { right } from 'fp-ts/lib/Either';
+import { getBattleLevel, getCourierLevel, getTradeLevel } from './ExperienceService';
 
 export class UserService {
     static async applyRewards(userId: string | number, reward: Rewardable) {
@@ -26,12 +25,16 @@ export class UserService {
     static async currentStatus(userId: string | number) {
         const user = await getRepository(User).findOneOrFail(userId);
 
-        let result = '';
+        const courierRating = getCourierLevel(user);
+        const tradeRating = getTradeLevel(user);
+        const battleRating = getBattleLevel(user);
+
+        let result = `Имя: <b>${user.name}</b>\n\n`;
         result += `💎 <b>${user.money}</b> кристаллов\n`;
-        result += `<b>${user.exp}</b> очков опыта\n`;
-        result += `<b>${user.courierExp}</b> очков курьерского рейтинга\n`;
-        result += `<b>${user.tradeExp}</b> очков торгового рейтинга\n`;
-        result += `<b>${user.battleExp}</b> очков боевого рейтинга\n`;
+        result += `📦 <b>${courierRating.value}</b> Курьерский рейтинг (${courierRating.current} / ${courierRating.next}, ${courierRating.percentage}%)\n`;
+        result += `📈 <b>${tradeRating.value}</b> Торговый рейтинг (${tradeRating.current} / ${tradeRating.next}, ${tradeRating.percentage}%)\n`;
+        result += `⚔️ <b>${battleRating.value}</b> Боевой рейтинг (${battleRating.current} / ${battleRating.next}, ${battleRating.percentage}%)\n`;
+        result += `\n<b>${user.exp}</b> очков опыта`;
 
         return result;
     }

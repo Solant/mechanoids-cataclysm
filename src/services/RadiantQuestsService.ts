@@ -14,7 +14,7 @@ export class RadiantQuestsService {
         const quest = await getRepository(RadiantQuest).findOneOrFail(questId);
         const user = await getRepository(User).findOneOrFail(userId);
 
-        if (getExplorationLevel(user) < quest.lvlRestriction) {
+        if (getExplorationLevel(user).value < quest.lvlRestriction) {
             return left('Вы не можете начать этот квест');
         }
 
