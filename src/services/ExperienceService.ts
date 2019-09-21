@@ -45,6 +45,10 @@ function getRating(value: number): RatingValue {
     };
 }
 
+export function getTradeLevel(user: User): RatingValue {
+    return getRating(user.tradeExp);
+}
+
 export function getCourierLevel(user: User): RatingValue {
     return getRating(user.courierExp);
 }
