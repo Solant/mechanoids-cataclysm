@@ -2,7 +2,7 @@ require('dotenv').config();
 
 module.exports = {
     apps: [{
-        name: 'Mechanoids Telegram Bot',
+        name: 'bot',
         script: 'ts-node',
         args: 'src/index.ts',
         instances: 1,
