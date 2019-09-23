@@ -12,6 +12,9 @@ import { logger } from './logger';
 import { createSession } from './middlewares/session';
 import { createPerformance } from './middlewares/performance';
 import { DeferredMessage } from './models/DeferredMessage';
+import { User } from './models/User';
+
+const Bottleneck = require('bottleneck');
 
 config({ path: resolve(__dirname, '../.env') });
 
@@ -32,6 +35,27 @@ config({ path: resolve(__dirname, '../.env') });
     bot.use(createPerformance());
     bot.use(i18n.middleware());
     bot.use(stages.middleware());
+
+    const limiter = new Bottleneck({
+        minTime: 1000 * 60 / 25,
+        maxConcurrent: 1,
+    });
+    const wrapped = limiter.wrap((chatId: number, msg: string) => {
+        bot.telegram.sendMessage(chatId, msg);
+    });
+
+    bot.command('/broadcast', ctx => {
+        if (ctx.from!.id.toString() === process.env.ADMIN_ID) {
+            getRepository(User)
+                .find()
+                .then(res => {
+                    const msg = ctx.message!.text!.replace('/broadcast ', '');
+                    res.forEach(user => {
+                        wrapped(user.chatId, msg);
+                    });
+                });
+        }
+    });
     bot.on('message', ctx => {
         // @ts-ignore
         if (ctx.session.__scenes.current) {
